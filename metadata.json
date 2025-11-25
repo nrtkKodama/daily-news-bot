@@ -1,0 +1,5 @@
+{
+  "name": "Global News Curator",
+  "description": "AI-powered daily news digest that learns your preferences. Curates top 10 global stories and integrates with Slack.",
+  "requestFramePermissions": []
+}
