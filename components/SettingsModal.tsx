@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserPreferences } from '../types';
-import { X, Save, Download, Terminal, FileJson } from 'lucide-react';
+import { X, Save, Download, Terminal, FileJson, FileCode } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -47,7 +47,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, p
  *    node daily-news-bot.js
  */
 
-const { GoogleGenAI } = require("@google/genai");
+import { GoogleGenAI } from "@google/genai";
 
 // 設定（アプリから引き継いだ設定）
 const CONFIG = {
@@ -151,6 +151,7 @@ main();
     const packageJson = {
       "name": "daily-news-bot",
       "version": "1.0.0",
+      "type": "module",
       "description": "Automated Daily News Curator",
       "main": "daily-news-bot.js",
       "scripts": {
@@ -160,10 +161,47 @@ main();
         "@google/genai": "^1.0.0"
       },
       "engines": {
-        "node": ">=18.0.0"
+        "node": ">=20.0.0"
       }
     };
     downloadFile(JSON.stringify(packageJson, null, 2), 'package.json', 'application/json');
+  };
+
+  const handleDownloadWorkflow = () => {
+    const workflowContent = `name: Daily Global News
+
+on:
+  schedule:
+    # 毎日 日本時間 朝7:00 (UTC 22:00) に実行
+    - cron: '0 22 * * *'
+  # 手動実行用
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Debug - List files
+        run: ls -la
+
+      - name: Run News Bot
+        env:
+          API_KEY: \${{ secrets.API_KEY }}
+        run: node daily-news-bot.js
+`;
+    downloadFile(workflowContent, 'daily-news.yml', 'text/yaml');
   };
 
   const downloadFile = (content: string, filename: string, type: string) => {
@@ -241,24 +279,34 @@ main();
           <div className="pt-4 border-t border-gray-100">
             <div className="flex items-center gap-2 mb-3">
               <Terminal className="w-5 h-5 text-gray-700" />
-              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Automation (GitHub Actions)</h3>
+              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Automation Setup</h3>
             </div>
             <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
               <p className="text-xs text-gray-600 mb-3">
-                Download these two files and upload them to a GitHub repository to run this bot daily for free.
+                1. Download all 3 files below.<br/>
+                2. Upload <b>package.json</b> and <b>daily-news-bot.js</b> to the <span className="font-bold text-red-600">ROOT</span> of your GitHub repo.<br/>
+                3. Place <b>daily-news.yml</b> inside <code>.github/workflows/</code> folder in the repo.
               </p>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                    <button 
+                    onClick={handleDownloadScript}
+                    className="flex-1 flex items-center justify-center gap-2 bg-gray-800 text-white px-3 py-2 rounded-lg hover:bg-gray-900 transition-colors text-xs font-medium"
+                    >
+                    <Download className="w-4 h-4" /> daily-news-bot.js
+                    </button>
+                    <button 
+                    onClick={handleDownloadPackageJson}
+                    className="flex-1 flex items-center justify-center gap-2 bg-gray-200 text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-300 transition-colors text-xs font-medium"
+                    >
+                    <FileJson className="w-4 h-4" /> package.json
+                    </button>
+                </div>
                 <button 
-                  onClick={handleDownloadScript}
-                  className="flex-1 flex items-center justify-center gap-2 bg-gray-800 text-white px-3 py-2 rounded-lg hover:bg-gray-900 transition-colors text-xs font-medium"
+                  onClick={handleDownloadWorkflow}
+                  className="w-full flex items-center justify-center gap-2 bg-indigo-100 text-indigo-800 px-3 py-2 rounded-lg hover:bg-indigo-200 transition-colors text-xs font-medium"
                 >
-                  <Download className="w-4 h-4" /> Bot Script (.js)
-                </button>
-                <button 
-                  onClick={handleDownloadPackageJson}
-                  className="flex-1 flex items-center justify-center gap-2 bg-gray-200 text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-300 transition-colors text-xs font-medium"
-                >
-                  <FileJson className="w-4 h-4" /> package.json
+                  <FileCode className="w-4 h-4" /> daily-news.yml (Workflow)
                 </button>
               </div>
             </div>
