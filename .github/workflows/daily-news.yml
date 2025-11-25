@@ -4,7 +4,7 @@ on:
   schedule:
     # 毎日 日本時間 朝7:00 (UTC 22:00) に実行
     - cron: '0 21 * * *'
-  # 手動実行も可能にする設定
+  # 手動実行用
   workflow_dispatch:
 
 jobs:
@@ -23,8 +23,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Debug - List files
+        run: ls -la
+
       - name: Run News Bot
         env:
-          # 手順3で設定したSecretを読み込む
           API_KEY: ${{ secrets.API_KEY }}
         run: node daily-news-bot.js
