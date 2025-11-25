@@ -1,0 +1,30 @@
+name: Daily Global News
+
+on:
+  schedule:
+    # 毎日 日本時間 朝7:00 (UTC 22:00) に実行
+    - cron: '0 21 * * *'
+  # 手動実行も可能にする設定
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run News Bot
+        env:
+          # 手順3で設定したSecretを読み込む
+          API_KEY: ${{ secrets.API_KEY }}
+        run: node daily-news-bot.js
