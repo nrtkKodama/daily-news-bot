@@ -3,10 +3,11 @@
  * Global News Curator - Automation Script
  * 
  * 実行方法:
- * 1. Node.js (v18以上) をインストール
+ * 1. Node.js (v20以上) をインストール
  * 2. 必要なパッケージをインストール: npm install
  * 3. 環境変数を設定して実行: 
  *    export API_KEY="あなたのGemini_API_KEY"
+ *    export SLACK_WEBHOOK_URL="あなたのSlack_Webhook_URL"
  *    node daily-news-bot.js
  */
 
@@ -14,7 +15,7 @@ import { GoogleGenAI } from "@google/genai";
 
 // 設定（アプリから引き継いだ設定）
 const CONFIG = {
-  webhookUrl: "ここにWebhook_URLを設定",
+  // Webhook URL is loaded from process.env.SLACK_WEBHOOK_URL
   keywords: ["Technology","Global Economy","Science"],
   likedCategories: [],
   dislikedCategories: []
@@ -22,13 +23,15 @@ const CONFIG = {
 
 async function main() {
   const apiKey = process.env.API_KEY;
+  const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+
   if (!apiKey) {
     console.error("Error: API_KEY environment variable is missing.");
     process.exit(1);
   }
 
-  if (!CONFIG.webhookUrl || CONFIG.webhookUrl.includes("hooks.slack.com") === false) {
-    console.error("Error: Valid Slack Webhook URL is required.");
+  if (!webhookUrl) {
+    console.error("Error: SLACK_WEBHOOK_URL environment variable is missing.");
     process.exit(1);
   }
 
@@ -65,7 +68,7 @@ async function main() {
     const newsItems = JSON.parse(jsonString);
 
     console.log(`✅ Found ${newsItems.length} articles. Sending to Slack...`);
-    await sendToSlack(newsItems);
+    await sendToSlack(webhookUrl, newsItems);
     console.log("🚀 Done!");
 
   } catch (error) {
@@ -74,11 +77,12 @@ async function main() {
   }
 }
 
-async function sendToSlack(news) {
-  const date = new Date().toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' });
+async function sendToSlack(webhookUrl, news) {
+  // Include time in the date string since we send twice a day
+  const date = new Date().toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' });
   
   const blocks = [
-    { type: "header", text: { type: "plain_text", text: `🌍 Daily Global News Digest - ${date}`, emoji: true } },
+    { type: "header", text: { type: "plain_text", text: `🌍 Global News Digest - ${date}`, emoji: true } },
     { type: "divider" }
   ];
 
@@ -98,9 +102,9 @@ async function sendToSlack(news) {
     elements: [{ type: "mrkdwn", text: "Curated by AI based on global importance and your preferences." }]
   });
 
-  await fetch(CONFIG.webhookUrl, {
+  await fetch(webhookUrl, {
     method: 'POST',
-    body: JSON.stringify({ text: `Daily News Digest - ${date}`, blocks }),
+    body: JSON.stringify({ text: `Global News Digest - ${date}`, blocks }),
     headers: { 'Content-Type': 'application/json' }
   });
 }
